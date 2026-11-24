@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Requiem 4 a lonely heart</title>
+  <meta name="description" content="Reproductor musical">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101114;
+      --panel: #191b20;
+      --panel2: #22252c;
+      --text: #f1f1f1;
+      --muted: #9da2ad;
+      --accent: #c5a6ff;
+      --accent2: #8d6bd1;
+      --line: #30333b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; padding: 28px 16px;
+      background: radial-gradient(ellipse at top, #24202d 0, var(--bg) 55%);
+      color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    button { font: inherit; }
+    .app { width: min(920px, 100%); margin: 0 auto; }
+    header { margin: 0 0 18px; }
+    .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .18em; font-size: 11px; font-weight: 700; }
+    h1 { margin: 6px 0 0; font-size: clamp(22px, 4vw, 30px); font-weight: 650; letter-spacing: -.04em; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(280px, .95fr); gap: 16px; align-items: start; }
+    .panel { background: rgba(25,27,32,.94); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 55px #0005; }
+    .now { padding: 18px; }
+    .art-wrap { width: min(100%, 360px); margin: 0 auto 18px; }
+    .art { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; background: #292b32; box-shadow: 0 12px 32px #0006; }
+    .placeholder { display:grid; place-items:center; color:#777; font-size:64px; }
+    .track-info { text-align:center; min-height: 66px; }
+    .track-title { font-size: 19px; line-height: 1.3; font-weight: 700; overflow-wrap:anywhere; }
+    .track-artist { color: var(--muted); margin-top: 5px; font-size: 14px; }
+    .track-album { color: #777e8a; margin-top: 3px; font-size: 12px; }
+    .progress { display:flex; align-items:center; gap:10px; margin: 18px 0 12px; color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
+    input[type=range] { accent-color: var(--accent); cursor:pointer; min-width:0; }
+    #seek { flex:1; }
+    .controls { display:flex; justify-content:center; align-items:center; gap:12px; }
+    .ctrl { border:0; color:var(--text); background:transparent; cursor:pointer; width:40px; height:40px; border-radius:50%; font-size:19px; }
+    .ctrl:hover, .toggle:hover { background:var(--panel2); }
+    .ctrl.primary { width:54px; height:54px; background:var(--accent); color:#17131f; font-size:22px; font-weight:800; }
+    .ctrl.primary:hover { background:#d6c2ff; }
+    .toggle-row { display:flex; justify-content:space-between; align-items:center; margin-top:14px; color:var(--muted); font-size:12px; }
+    .toggle { border:1px solid transparent; background:transparent; color:var(--muted); border-radius:8px; padding:7px 9px; cursor:pointer; }
+    .toggle.active { color:var(--accent); border-color:#57476f; background:#2b2436; }
+    .volume { display:flex; align-items:center; gap:8px; }
+    #volume { width:84px; }
+    .video-panel { margin-top: 16px; padding: 12px; }
+    .video-label { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.12em; margin:0 0 9px 2px; }
+    #yt-player { width:100%; aspect-ratio:16/9; background:#08090b; border-radius:10px; overflow:hidden; }
+    #yt-player iframe { width:100%; height:100%; }
+    .list-head { display:flex; justify-content:space-between; align-items:center; padding:17px 17px 12px; border-bottom:1px solid var(--line); }
+    .list-head h2 { margin:0; font-size:15px; }
+    #count { color:var(--muted); font-size:12px; }
+    #playlist { max-height: 620px; overflow:auto; padding:7px; }
+    .song { display:grid; grid-template-columns:42px minmax(0,1fr) 42px; gap:10px; align-items:center; width:100%; border:0; text-align:left; padding:8px; color:var(--text); background:transparent; border-radius:10px; cursor:pointer; }
+    .song:hover { background:var(--panel2); }
+    .song.current { background:#30283d; }
+    .song img { width:42px; height:42px; object-fit:cover; border-radius:6px; background:#30323a; }
+    .song-title { font-size:12px; font-weight:650; line-height:1.35; }
+    .song-artist { color:var(--muted); font-size:11px; margin-top:3px; }
+    .song-duration { color:var(--muted); font-size:11px; text-align:right; font-variant-numeric:tabular-nums; }
+    .status { color:var(--muted); text-align:center; font-size:12px; padding:12px; min-height:38px; }
+    .error { color:#ff9c9c; }
+    @media (max-width:720px) {
+      body { padding:18px 12px; }
+      .layout { grid-template-columns:1fr; }
+      #playlist { max-height:420px; }
+      .art-wrap { width:min(72vw, 300px); }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="eyebrow">Wimpy-inspired player</div>
+      <h1 id="playlist-name">Requiem 4 a lonely heart</h1>
+    </header>
+
+    <div class="layout">
+      <section>
+        <div class="panel now">
+          <div class="art-wrap">
+            <img id="cover" class="art" alt="Portada del álbum" src=""
+              onerror="this.style.display='none';document.getElementById('cover-placeholder').style.display='grid'">
+            <div id="cover-placeholder" class="art placeholder" style="display:none">♫</div>
+          </div>
+          <div class="track-info">
+            <div id="title" class="track-title">Cargando lista…</div>
+            <div id="artist" class="track-artist"> </div>
+            <div id="album" class="track-album"></div>
+          </div>
+          <div class="progress">
+            <span id="elapsed">0:00</span>
+            <input id="seek" type="range" min="0" max="1000" value="0" aria-label="Posición">
+            <span id="duration">0:00</span>
+          </div>
+          <div class="controls">
+            <button class="ctrl" id="shuffle" title="Aleatorio" aria-label="Aleatorio">⤨</button>
+            <button class="ctrl" id="previous" title="Anterior" aria-label="Anterior">◀|</button>
+            <button class="ctrl primary" id="play" title="Reproducir" aria-label="Reproducir">▶</button>
+            <button class="ctrl" id="next" title="Siguiente" aria-label="Siguiente">|▶</button>
+            <button class="ctrl" id="repeat" title="Repetir: desactivado" aria-label="Repetir">↻</button>
+          </div>
+          <div class="toggle-row">
+            <span id="play-state">Selecciona una canción para comenzar</span>
+            <label class="volume">Vol. <input id="volume" type="range" min="0" max="100" value="80" aria-label="Volumen"></label>
+          </div>
+        </div>
+
+        <div class="panel video-panel">
+          <div class="video-label">Video de YouTube</div>
+          <div id="yt-player"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="list-head">
+          <h2>Lista de reproducción</h2>
+          <span id="count">0 canciones</span>
+        </div>
+        <div id="playlist"></div>
+        <div id="status" class="status">Cargando playlist.json…</div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    let tracks = [];
+    let currentIndex = 0;
+    let player = null;
+    let playerReady = false;
+    let isPlaying = false;
+    let shuffle = false;
+    let repeatMode = 0; // 0: apagado, 1: repetir lista, 2: repetir canción
+    let progressTimer = null;
+
+    const $ = (id) => document.getElementById(id);
+    const formatTime = (seconds) => {
+      if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    };
+
+    function getVideoId(track) {
+      if (track.youtubeId) return track.youtubeId;
+      const url = track.url || "";
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?.*v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+      return match ? match[1] : "";
+    }
+
+    function setStatus(message, isError = false) {
+      $("status").textContent = message;
+      $("status").classList.toggle("error", isError);
+    }
+
+    function showTrack(index) {
+      const track = tracks[index];
+      if (!track) return;
+      $("title").textContent = track.title || "Sin título";
+      $("artist").textContent = track.artist || "Artista no especificado";
+      $("album").textContent = track.album || "";
+      const cover = $("cover");
+      $("cover-placeholder").style.display = "none";
+      cover.style.display = "block";
+      cover.src = track.cover || "";
+      if (!track.cover) {
+        cover.style.display = "none";
+        $("cover-placeholder").style.display = "grid";
+      }
+      document.querySelectorAll(".song").forEach((el, i) => el.classList.toggle("current", i === index));
+      document.querySelectorAll(".song").forEach((el, i) => {
+        const marker = el.querySelector(".song-duration");
+        if (marker) marker.textContent = i === index && isPlaying ? "♫" : (tracks[i].duration || "");
+      });
+    }
+
+    function renderPlaylist() {
+      const container = $("playlist");
+      container.replaceChildren();
+      tracks.forEach((track, index) => {
+        const button = document.createElement("button");
+        button.className = "song";
+        button.type = "button";
+        button.addEventListener("click", () => playTrack(index));
+        const img = document.createElement("img");
+        img.loading = "lazy";
+        img.alt = "";
+        img.src = track.cover || "";
+        img.onerror = () => { img.style.visibility = "hidden"; };
+        const info = document.createElement("span");
+        const title = document.createElement("div");
+        title.className = "song-title";
+        title.textContent = track.title || "Sin título";
+        const artist = document.createElement("div");
+        artist.className = "song-artist";
+        artist.textContent = track.artist || "Artista no especificado";
+        info.append(title, artist);
+        const duration = document.createElement("span");
+        duration.className = "song-duration";
+        duration.textContent = track.duration || "";
+        button.append(img, info, duration);
+        container.append(button);
+      });
+      $("count").textContent = `${tracks.length} canciones`;
+      showTrack(currentIndex);
+    }
+
+    async function loadPlaylist() {
+      try {
+        const response = await fetch("./playlist.json", { cache: "no-store" });
+        if (!response.ok) throw new Error(`No se pudo abrir playlist.json (HTTP ${response.status})`);
+        const data = await response.json();
+        // Acepta tanto el arreglo convertido como el respaldo original de Wimpy.
+        if (Array.isArray(data)) {
+          tracks = data;
+        } else if (Array.isArray(data.playlists) && data.playlists.length) {
+          $("playlist-name").textContent = data.playlists[0].name || $("playlist-name").textContent;
+          tracks = (data.playlists[0].tracks || []).map(t => ({
+            title: t.title,
+            artist: t.channelTitle,
+            album: t.album || "",
+            cover: t.thumbnail || "",
+            duration: t.duration || "",
+            youtubeId: (t.source && t.source.videoId) || t.id || ""
+          }));
+        } else {
+          throw new Error("El JSON no contiene una lista de canciones reconocible.");
+        }
+        tracks = tracks.filter(t => getVideoId(t));
+        if (!tracks.length) throw new Error("No encontré canciones con identificador de YouTube válido.");
+        renderPlaylist();
+        setStatus("Lista cargada correctamente.");
+      } catch (error) {
+        $("title").textContent = "No se pudo cargar la lista";
+        setStatus(error.message, true);
+      }
+    }
+
+    function playTrack(index) {
+      if (!tracks.length || !playerReady) return;
+      currentIndex = (index + tracks.length) % tracks.length;
+      const videoId = getVideoId(tracks[currentIndex]);
+      if (!videoId) {
+        setStatus("Esta entrada no tiene un ID de YouTube válido.", true);
+        return;
+      }
+      showTrack(currentIndex);
+      $("play-state").textContent = "Reproduciendo";
+      player.loadVideoById(videoId);
+      player.setVolume(Number($("volume").value));
+      isPlaying = true;
+      $("play").textContent = "Ⅱ";
+      setStatus(`Reproduciendo ${currentIndex + 1} de ${tracks.length}`);
+    }
+
+    function nextTrack(automatic = false) {
+      if (!tracks.length) return;
+      if (repeatMode === 2 && automatic) {
+        playTrack(currentIndex);
+        return;
+      }
+      let next = currentIndex + 1;
+      if (shuffle && tracks.length > 1) {
+        do { next = Math.floor(Math.random() * tracks.length); } while (next === currentIndex);
+      } else if (next >= tracks.length) {
+        if (repeatMode === 1) next = 0;
+        else {
+          isPlaying = false;
+          $("play").textContent = "▶";
+          $("play-state").textContent = "Lista terminada";
+          return;
+        }
+      }
+      playTrack(next);
+    }
+
+    function previousTrack() {
+      if (!tracks.length) return;
+      if (playerReady && player.getCurrentTime() > 3) {
+        player.seekTo(0, true);
+      } else {
+        playTrack((currentIndex - 1 + tracks.length) % tracks.length);
+      }
+    }
+
+    function updateProgress() {
+      if (!playerReady) return;
+      try {
+        const current = player.getCurrentTime() || 0;
+        const total = player.getDuration() || 0;
+        $("elapsed").textContent = formatTime(current);
+        $("duration").textContent = formatTime(total);
+        $("seek").value = total > 0 ? Math.round(current / total * 1000) : 0;
+      } catch (_) {}
+    }
+
+    $("play").addEventListener("click", () => {
+      if (!tracks.length) return;
+      if (!playerReady) { setStatus("El reproductor de YouTube todavía está cargando."); return; }
+      if (!isPlaying) {
+        if (player.getPlayerState && player.getPlayerState() === YT.PlayerState.PAUSED) player.playVideo();
+        else playTrack(currentIndex);
+      } else player.pauseVideo();
+    });
+    $("next").addEventListener("click", () => nextTrack(false));
+    $("previous").addEventListener("click", previousTrack);
+    $("shuffle").addEventListener("click", () => {
+      shuffle = !shuffle;
+      $("shuffle").classList.toggle("active", shuffle);
+      $("shuffle").title = shuffle ? "Aleatorio activado" : "Aleatorio desactivado";
+    });
+    $("repeat").addEventListener("click", () => {
+      repeatMode = (repeatMode + 1) % 3;
+      $("repeat").classList.toggle("active", repeatMode !== 0);
+      $("repeat").textContent = repeatMode === 2 ? "↻¹" : "↻";
+      $("repeat").title = ["Repetir: desactivado", "Repetir lista", "Repetir canción"][repeatMode];
+    });
+    $("volume").addEventListener("input", () => {
+      if (playerReady) player.setVolume(Number($("volume").value));
+    });
+    $("seek").addEventListener("change", () => {
+      if (playerReady) {
+        const total = player.getDuration() || 0;
+        if (total) player.seekTo(total * Number($("seek").value) / 1000, true);
+      }
+    });
+
+    window.onYouTubeIframeAPIReady = function() {
+      player = new YT.Player("yt-player", {
+        width: "100%",
+        height: "100%",
+        videoId: "",
+        playerVars: { controls: 0, modestbranding: 1, rel: 0, playsinline: 1, enablejsapi: 1 },
+        events: {
+          onReady: function(event) {
+            playerReady = true;
+            event.target.setVolume(Number($("volume").value));
+            $("play-state").textContent = "Listo para reproducir";
+            loadPlaylist();
+            progressTimer = setInterval(updateProgress, 500);
+          },
+          onStateChange: function(event) {
+            if (event.data === YT.PlayerState.PLAYING) {
+              isPlaying = true;
+              $("play").textContent = "Ⅱ";
+              $("play-state").textContent = "Reproduciendo";
+              showTrack(currentIndex);
+            } else if (event.data === YT.PlayerState.PAUSED) {
+              isPlaying = false;
+              $("play").textContent = "▶";
+              $("play-state").textContent = "En pausa";
+            } else if (event.data === YT.PlayerState.ENDED) {
+              isPlaying = false;
+              $("play").textContent = "▶";
+              nextTrack(true);
+            }
+          },
+          onError: function(event) {
+            setStatus("YouTube no pudo reproducir este video (código " + event.data + "). Puede estar bloqueado o no disponible para insertar.", true);
+          }
+        }
+      });
+    };
+    const api = document.createElement("script");
+    api.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(api);
+  </script>
+</body>
+</html>
