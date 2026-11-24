@@ -1,0 +1,14 @@
+[
+  {
+    "image": "assets/gallery/imagen-01.jpg",
+    "caption": "Una imagen para guardar"
+  },
+  {
+    "image": "assets/gallery/imagen-02.jpg",
+    "caption": ""
+  },
+  {
+    "image": "assets/gallery/imagen-03.jpg",
+    "caption": "Fragmentos visuales"
+  }
+]

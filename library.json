@@ -1,0 +1,26 @@
+[
+  {
+    "type": "Libro",
+    "title": "Un descubrimiento por registrar",
+    "creator": "Autor o autora",
+    "year": "",
+    "note": "Una nota breve sobre por qué llamó mi atención.",
+    "image": ""
+  },
+  {
+    "type": "Videojuego",
+    "title": "Otro hallazgo",
+    "creator": "Desarrollador/a",
+    "year": "",
+    "note": "Una impresión, una idea o algo que quiero recordar.",
+    "image": ""
+  },
+  {
+    "type": "Arte",
+    "title": "Una obra que me acompaña",
+    "creator": "Artista",
+    "year": "",
+    "note": "Qué me hizo detenerme a mirarla.",
+    "image": ""
+  }
+]
